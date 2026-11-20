@@ -82,6 +82,8 @@ input{width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--l
 <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="السلة"></section>
 
 <script>
+// ⚠️ غيّر الرقم ده برقم واتساب المطعم: 20 + الرقم من غير الصفر الأول (مثال: 201012345678)
+var WA_NUMBER="201090813285";
 var CATS=[["bk","الفطار 🍳","فول وطعمية على أصولها"],["mn","الأطباق الرئيسية 🍲","أكل بيت متسبّك"],["gr","المشويات 🔥","على الفحم"],["sw","السندوتشات 🥙","لقمة سريعة"],["sd","المقبلات والسلطات 🥗","جنب أي أكلة"],["ds","الحلويات 🍮","ختام حلو"],["dr","المشروبات 🥤","بارد وسخن"]];
 // [قسم, اسم, وصف, سعر, إيموجي, شارة]
 var ITEMS=[
@@ -130,7 +132,7 @@ var ITEMS=[
 ["dr","ليمون بالنعناع","مثلج ومنعش","40","🍋",""]
 ].map(function(a,i){return{id:i,cat:a[0],name:a[1],desc:a[2],price:+a[3],emo:a[4],tag:a[5]}});
 
-var cart={},mode="delivery",view="cart",lastOrder="";
+var cart={},mode="delivery",view="cart",lastOrder="",lastLink="";
 try{var s=localStorage.getItem("sofra-cart");if(s)cart=JSON.parse(s)||{}}catch(e){}
 function save(){try{localStorage.setItem("sofra-cart",JSON.stringify(cart))}catch(e){}}
 function egp(n){return n.toLocaleString("ar-EG",{maximumFractionDigits:2})+" ج.م"}
@@ -160,14 +162,14 @@ function totals(){var t=calc();return '<div class="row t"><span>المجموع</
   (mode==="delivery"?'<div class="row t"><span>التوصيل (مجاني فوق ٤٠٠ ج.م)</span><span>'+(t.dl?egp(t.dl):"مجاني")+'</span></div>':'')+'<div class="row g"><span>الإجمالي</span><span>'+egp(t.total)+'</span></div>'}
 function head(t,back){return '<div class="sh"><h3>'+t+'</h3><button class="x" data-close aria-label="إغلاق">✕</button></div>'}
 function drawSheet(){var h="",q=qty();
-  if(view==="done"){$("sheet").innerHTML=head("تم الطلب")+'<div class="done"><div class="big">🎉</div><h3>طلبك اتسجّل، شكراً ليك!</h3><p>رقم الطلب <b>'+lastOrder+'</b><br>هيوصلك خلال ٣٠–٤٥ دقيقة.</p><p class="sub">دي نسخة تجريبية لمطعم وهمي، مفيش طلب حقيقي اتبعت.</p></div><button class="cta" data-close>تمام</button>';return}
+  if(view==="done"){$("sheet").innerHTML=head("خلّصنا تقريباً")+'<div class="done"><div class="big">💬</div><h3>طلبك جاهز يتبعت على واتساب</h3><p>رقم الطلب <b>'+lastOrder+'</b><br>لو واتساب مفتحش لوحده اضغط الزرار وابعت الرسالة.</p></div><a class="cta" style="display:block;text-align:center;text-decoration:none" href="'+lastLink+'" target="_blank" rel="noopener">فتح واتساب وإرسال الطلب</a>';return}
   if(!q){$("sheet").innerHTML=head("السلة")+'<div class="empty">السلة فاضية، ضيف أصناف من المنيو.</div>';return}
   if(view==="cart"){
     h=head("سلتك")+'<div class="sb">'+ITEMS.filter(function(i){return cart[i.id]}).map(function(i){return '<div class="row"><div class="info"><b>'+i.name+'</b><div class="price">'+egp(i.price*cart[i.id])+'</div></div><div class="step"><button data-p="'+i.id+'" aria-label="زيادة">+</button><span>'+cart[i.id].toLocaleString("ar-EG")+'</span><button data-m="'+i.id+'" aria-label="نقص">−</button></div></div>'}).join("")+
     '<div class="seg"><button data-mode="delivery" aria-pressed="'+(mode==="delivery")+'">🛵 توصيل</button><button data-mode="pickup" aria-pressed="'+(mode==="pickup")+'">🏪 استلام من الفرع</button></div>'+totals()+'</div><button class="cta" data-go-co>كمّل الطلب</button>'}
   else{h=head("بيانات الطلب")+'<div class="sb"><label for="fn">الاسم</label><input id="fn" autocomplete="name"><div class="err" id="e1"></div><label for="fp">رقم الموبايل</label><input id="fp" inputmode="numeric" placeholder="01xxxxxxxxx" autocomplete="tel"><div class="err" id="e2"></div>'+
     (mode==="delivery"?'<label for="fa">العنوان بالتفصيل</label><input id="fa" autocomplete="street-address"><div class="err" id="e3"></div>':'')+
-    '<div class="row t" style="margin-top:8px"><span>الدفع</span><span>كاش عند الاستلام 💵</span></div>'+totals()+'</div><button class="cta" data-send>تأكيد الطلب</button>'}
+    '<div class="row t" style="margin-top:8px"><span>الدفع</span><span>كاش عند الاستلام 💵</span></div>'+totals()+'</div><button class="cta" data-send>إرسال الطلب على واتساب</button>'}
   $("sheet").innerHTML=h}
 
 function send(){var n=$("fn").value.trim(),p=$("fp").value.trim(),a=mode==="delivery"?$("fa").value.trim():"x",ok=true;
@@ -176,7 +178,12 @@ function send(){var n=$("fn").value.trim(),p=$("fp").value.trim(),a=mode==="deli
   if(mode==="delivery")$("e3").textContent=a.length<8?(ok=false,"اكتب عنوان واضح"):"";
   if(!ok)return;
   lastOrder="#"+(1000+Math.floor(Math.random()*9000)).toLocaleString("ar-EG",{useGrouping:false});
-  cart={};save();drawMenu();bar();view="done";drawSheet()}
+  var t=calc(),L=["*طلب جديد من سُفرة* "+lastOrder,"",ITEMS.filter(function(i){return cart[i.id]}).map(function(i){return "• "+i.name+" × "+cart[i.id]+" = "+i.price*cart[i.id]+" ج.م"}).join("\n"),"",
+   "المجموع: "+t.sub+" ج.م","خدمة 12%: "+t.sv+" ج.م","ضريبة 14%: "+t.vat+" ج.م",mode==="delivery"?"التوصيل: "+(t.dl?t.dl+" ج.م":"مجاني"):"استلام من الفرع","*الإجمالي: "+t.total+" ج.م* (كاش عند الاستلام)","",
+   "الاسم: "+n,"الموبايل: "+p,mode==="delivery"?"العنوان: "+a:"استلام من الفرع"];
+  lastLink="https://wa.me/"+WA_NUMBER+"?text="+encodeURIComponent(L.join("\n"));
+  cart={};save();drawMenu();bar();view="done";drawSheet();
+  try{window.open(lastLink,"_blank")}catch(e){}}
 
 document.addEventListener("click",function(e){var t=e.target.closest("button");if(!t)return;
   if(t.dataset.p!==undefined)change(+t.dataset.p,1);
